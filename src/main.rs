@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 use core::panic::PanicInfo;
-
+mod vga_buffer;
 static HELLO: &[u8] = b"hello world";
 
 #[unsafe(no_mangle)]
@@ -14,6 +14,7 @@ pub extern "C" fn _start() -> ! {
         }
     }
     loop {}
+    // unimplemented!()
 }
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
