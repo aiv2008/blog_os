@@ -1,4 +1,6 @@
 use core::fmt::{self, Write};
+use lazy_static::lazy_static;
+use spin::Mutex;
 use volatile::Volatile;
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,12 +73,13 @@ const BUFFER_WIDTH: usize = 80;
 // 关于 ColorCode::new 的问题应该能使用常函数（const functions）解决，但常量求值器还存在不完善之处，它还不能在编译时直接转换裸指针到变量的引用——也许未来这段代码能够工作，但在那之前，我们需要寻找另外的解决方案。
 // 延迟初始化
 // 使用非常函数初始化静态变量是 Rust 程序员普遍遇到的问题。幸运的是，有一个叫做 lazy_static 的包提供了一个很棒的解决方案：它提供了名为 lazy_static! 的宏，定义了一个延迟初始化（lazily initialized）的静态变量；这个变量的值将在第一次使用时计算，而非在编译时计算。这时，变量的初始化过程将在运行时执行，任意的初始化代码——无论简单或复杂——都是能够使用的。
-pub static WRITER: Writer = Writer{
-    column_position: 0,
-    color_code: ColorCode::new(Color::Blue, Color::LightRed),
-    buffer: unsafe {
-        &mut *(0xb8000 as *mut Buffer)
-    },
+
+lazy_static! {
+    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
+        column_position: 0,
+        color_code: ColorCode::new(Color::Blue, Color::LightRed),
+        buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
+    });
 }
 
 #[repr(transparent)]
@@ -169,4 +172,23 @@ impl fmt::Write for Writer {
         self.write_string(s);
         Ok(())
     }
+}
+
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => {
+        ($crate::vga_buffer::_print(format_args!($($arg)*)));
+    };
+}
+
+#[macro_export]
+macro_rules! println {
+    () => {
+        $crate::vga_buffer::print("\n")
+    };
+    ($(arg::tt)*) => {($crate::vga_buffer::print("{}\n",format_args!($($arg)*)));};
+}
+
+pub fn _print(args: fmt::Arguments) {
+    todo!()
 }

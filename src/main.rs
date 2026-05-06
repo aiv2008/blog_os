@@ -13,7 +13,17 @@ pub extern "C" fn _start() -> ! {
     //         *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
     //     }
     // }
-    vga_buffer::Writer::print_sth();
+    // vga_buffer::Writer::print_sth();
+    use core::fmt::Write;
+    vga_buffer::WRITER.lock().write_byte(b'H');
+    vga_buffer::WRITER.lock().write_str("ello world\n").unwrap();
+    write!(
+        vga_buffer::WRITER.lock(),
+        "the number are {} and {}",
+        34,
+        1.0 / 3.2
+    )
+    .unwrap();
     loop {}
     // unimplemented!()
 }
